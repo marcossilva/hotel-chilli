@@ -2,13 +2,14 @@ name: Get Data from Website on a CRON Schedule
 
 on:
   schedule:
-    - cron: '0,15,30,45 * * * *'
+    - cron: '* * * * *'
 
 jobs:
   report:
     name: Get Data
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v2
       - name: Run Python Script
         run: |
           python3 get_data.py
