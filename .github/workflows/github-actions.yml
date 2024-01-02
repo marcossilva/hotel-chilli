@@ -1,6 +1,7 @@
 name: Get Data from Website on a CRON Schedule
 
 on:
+  push:
   schedule:
     - cron: '* * * * *'
 
