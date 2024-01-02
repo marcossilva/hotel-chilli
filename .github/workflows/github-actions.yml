@@ -1,0 +1,25 @@
+name: Get Data from Website on a CRON Schedule
+
+on:
+  schedule:
+    - cron: '0,15,30,45 * * * *'
+
+jobs:
+  report:
+    name: Get Data
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run Python Script
+        run: |
+          python3 get_data.py
+      - name: commit
+        run: |
+          git config --global user.email 'github-actions@github.com'
+          git config --global user.name 'github-actions'
+          git add .
+          git commit -m "Update data"
+      - name: push
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          force: true
