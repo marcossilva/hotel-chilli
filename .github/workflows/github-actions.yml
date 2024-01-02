@@ -2,8 +2,7 @@ name: Get Data from Website on a CRON Schedule
 
 on:
   push:
-  schedule:
-    - cron: '0,15,30,45 * * * *'
+  workflow_dispatch:
 
 jobs:
   report:
