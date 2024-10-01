@@ -26687,3 +26687,84 @@ Performance & security by Cloudflare
 2024-10-01 08:15:22,46
 2024-10-01 08:30:25,45
 2024-10-01 08:45:23,41
+2024-10-01 09:01:01,Connection timed out
+Error code 522
+
+
+               Visit cloudflare.com for more information.
+            
+2024-10-01 09:01:01 UTC
+
+
+
+
+
+
+
+
+
+You
+
+    
+    Browser
+    
+  
+Working
+
+
+
+
+
+
+
+
+San Jose
+
+
+    Cloudflare
+    
+
+Working
+
+
+
+
+
+
+cuidax.com.br
+
+    
+    Host
+    
+  
+Error
+
+
+
+
+
+
+
+What happened?
+The initial connection between Cloudflare's network and the origin web server timed out. As a result, the web page can not be displayed.
+
+
+What can I do?
+If you're a visitor of this website:
+Please try again in a few minutes.
+If you're the owner of this website:
+Contact your hosting provider letting them know your web server is not completing requests. An Error 522 means that the request was able to connect to your web server, but that the request didn't finish. The most likely cause is that something on your server is hogging resources. Additional troubleshooting information here.
+
+
+
+
+
+Cloudflare Ray ID: 8cbb430e4a3d9657
+•
+
+      Your IP:
+      Click to reveal
+13.83.1.222
+•
+
+Performance & security by Cloudflare
