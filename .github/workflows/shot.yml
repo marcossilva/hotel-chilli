@@ -1,0 +1,32 @@
+name: Search info
+
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: "URL"
+        required: true
+      min_id:
+        description: "min_id"
+        required: true
+      max_id:
+        description: "max_id"
+        required: true
+      num_tickets:
+        description: "num_tickets:"
+        required: true
+        
+
+jobs:
+  report:
+    name: Get Data
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - name: Install dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          pip3 install -r requirements.txt
+      - name: Run Python Script
+        run: |
+          python3 get_url.py --url ${{ github.event.inputs.url }} --min_id ${{ github.event.inputs.min_id }} --max_id ${{ github.event.inputs.max_id }} --num_tickets ${{ github.event.inputs.num_tickets }}
