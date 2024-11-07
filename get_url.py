@@ -10,10 +10,10 @@ from aiohttp import ClientSession
 
 argparser = argparse.ArgumentParser()
 
-argparser.add_argument('url', help='The URL to fetch')
-argparser.add_argument('min_id', help='The minimum ID to fetch')
-argparser.add_argument('max_id', help='The maximum ID to fetch')
-argparser.add_argument('num_tickets', help='The maximum ID to fetch')
+argparser.add_argument('--url', help='The URL to fetch')
+argparser.add_argument('--min_id', help='The minimum ID to fetch')
+argparser.add_argument('--max_id', help='The maximum ID to fetch')
+argparser.add_argument('--num_tickets', help='The maximum ID to fetch')
 
 args = argparser.parse_args()
 
