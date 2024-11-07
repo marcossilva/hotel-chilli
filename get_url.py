@@ -28,6 +28,7 @@ headers = {
     'accept-language': 'en-US,en;q=0.5',
     'referer': url,
     'content-type': 'text/plain;charset=UTF-8',
+    'next-action': '1fdce2a0a62496a3bfd9cb206bfeaa3541a43cc6',
     'sec-fetch-dest': 'empty',
     'sec-fetch-mode': 'cors',
     'sec-fetch-site': 'same-origin',
@@ -48,10 +49,10 @@ async def my_post(session: ClientSession, id_val):
             num_tickets_temp = len(clean_data[0]['event']['deals'])
             if (num_tickets_temp != num_tickets):
                 print(f"{url}?ids={id_val}")
-            return {'id': id_val, 'num_tickets' : num_tickets_temp}
+            return {'id': id_val, 'num_tickets' : num_tickets_temp, 'status': response.status}
     except:
         pass
-    return {'id': id_val, 'num_tickets' : -1}
+    return {'id': id_val, 'num_tickets' : -1, 'status': -1}
 
 async def run(offer_ids: List[str]):
     async with ClientSession() as session:
