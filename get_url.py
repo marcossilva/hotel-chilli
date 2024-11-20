@@ -27,7 +27,7 @@ headers = {
     'accept-language': 'en-US,en;q=0.5',
     'referer': url,
     'content-type': 'text/plain;charset=UTF-8',
-    'next-action': '1fdce2a0a62496a3bfd9cb206bfeaa3541a43cc6',
+    'next-action': '7f76abbfecefeb23f2394afad644cf64129aa13add',
     'sec-fetch-dest': 'empty',
     'sec-fetch-mode': 'cors',
     'sec-fetch-site': 'same-origin',
@@ -42,7 +42,6 @@ async def my_post(session: ClientSession, id_val):
     try:
         async with session.post(url+f'ids={id_val}', headers=headers, params=params, data=data) as response:
             r = await response.text()
-            # use regex to capture anythin after the string '1:'
             for line in r.split('\n'):
                 if line.startswith('1:'):
                     clean_data = json.loads(line[2:])
