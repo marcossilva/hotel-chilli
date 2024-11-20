@@ -3,7 +3,6 @@ import math
 import asyncio
 from typing import List
 import datetime
-import re
 import json
 from aiohttp import ClientSession
 
@@ -44,8 +43,10 @@ async def my_post(session: ClientSession, id_val):
         async with session.post(url+f'ids={id_val}', headers=headers, params=params, data=data) as response:
             r = await response.text()
             # use regex to capture anythin after the string '1:'
-            clean_text = re.search(r'1:(.*)', r).group(1)
-            clean_data = json.loads(clean_text)
+            for line in r.split('\n'):
+                if line.startswith('1:'):
+                    clean_data = json.loads(line[2:])
+                    break
             num_tickets_temp = len(clean_data[0]['event']['deals'])
             if (num_tickets_temp != num_tickets):
                 print(f"{url}?ids={id_val}")
