@@ -22,16 +22,24 @@ max_id = int(args.max_id)
 num_tickets = int(args.num_tickets)
 
 headers = {
-    'user-agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:131.0) Gecko/20100101 Firefox/131.0',
     'accept': 'text/x-component',
-    'accept-language': 'en-US,en;q=0.5',
-    'referer': url,
+    'accept-language': 'en-US,en;q=0.9,pt-BR;q=0.8,pt;q=0.7,es;q=0.6',
     'content-type': 'text/plain;charset=UTF-8',
+    # 'cookie': '_scid=48cc8bc1-bfc0-457f-8cc3-68c79c660aef; _ga=GA1.1.930334868.1718987544; _tt_enable_cookie=1; _ttp=TZ_hrx9wCFFfLVKZgMrGnh_lzBp; token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxMDI4NjA4LCJpYXQiOjE3MTg5ODc2MTB9.iz6UY8zwY9pTi4_kHP_yqBggAJKlDC3C00XRUUV9rno; __spdt=604b9c38c81e4456b38f87b651abf06b; __stripe_mid=fcc9a7cf-dbad-4fb3-a726-2eee2d227cecea39fa; _ga_VN3BLQZFTC=GS1.1.1722049826.1.0.1722049826.0.0.0; _ga_PG49M3YXH5=deleted; _gcl_au=1.1.1382681528.1726782241; auth_session=bzfssq4m2dmcb2jkh7sweqafkpjvegrz7rz6ufis; _scid_r=MVpIzIvBv8B_fwrDaMecZgrvBEVbRjzmI7-p8g; ph_phc_GoSnPhraOOMjhsibgegSkssTgpPUoeL9Dp4xAHwiR9A_posthog=%7B%22distinct_id%22%3A%221028608%22%2C%22%24sesid%22%3A%5B1732067267619%2C%2201934741-0a81-7f11-b08a-76e8cc0082bd%22%2C1732067265153%5D%2C%22%24epp%22%3Atrue%7D; _ga_PG49M3YXH5=GS1.1.1732067266.106.0.1732067269.57.0.0; CookieConsent={stamp:%27-1%27%2Cnecessary:true%2Cpreferences:true%2Cstatistics:true%2Cmarketing:true%2Cmethod:%27implied%27%2Cver:1%2Cutc:1732552140248%2Cregion:%27BR%27}; NEXT_LOCALE=pt-br; session=qkfloot4r77fzc5reaxiiu4jwtgu2v2z; _dd_s=rum=0&expire=1732818572527',
+    'dnt': '1',
     'next-action': '7f76abbfecefeb23f2394afad644cf64129aa13add',
+    'next-router-state-tree': '%5B%22%22%2C%7B%22children%22%3A%5B%5B%22locale%22%2C%22pt-br%22%2C%22d%22%5D%2C%7B%22children%22%3A%5B%22(main)%22%2C%7B%22children%22%3A%5B%22events%22%2C%7B%22children%22%3A%5B%5B%22slug%22%2C%22as-posicoes-de-sabrina-carpenter-sexta-29-11-zig%22%2C%22d%22%5D%2C%7B%22children%22%3A%5B%22__PAGE__%22%2C%7B%7D%2C%22%2Fpt-br%2Fevents%2Fas-posicoes-de-sabrina-carpenter-sexta-29-11-zig%22%2C%22refresh%22%5D%7D%5D%7D%5D%7D%5D%7D%5D%7D%2Cnull%2Cnull%2Ctrue%5D',
+    'origin': 'https://shotgun.live',
+    'priority': 'u=1, i',
+    'referer': 'https://shotgun.live/pt-br/events/as-posicoes-de-sabrina-carpenter-sexta-29-11-zig',
+    'sec-ch-ua': '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
+    'sec-ch-ua-mobile': '?0',
+    'sec-ch-ua-platform': '"Linux"',
     'sec-fetch-dest': 'empty',
     'sec-fetch-mode': 'cors',
     'sec-fetch-site': 'same-origin',
-    'priority': 'u=4',
+    'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+    'x-deployment-id': 'dpl_FfhZxrYRjE9YQ8kmJrwDunDYAg4s',
 }
 async def my_post(session: ClientSession, id_val):
     params = {
