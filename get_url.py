@@ -46,21 +46,18 @@ async def my_post(session: ClientSession, id_val):
         'ids': str(id_val),
     }
     slug = url.split('/')[-1]
-    data = '[{"slug":"' + slug + '","dealFilter":{"salesChannel":"online","currentlyVisible":true,"withResales":false,"ids":[' + str(id_val) + '],"utmSource":null,"visibilities":["public"]}},"$undefined"]'
-    try:
-        async with session.post(url+f'ids={id_val}', headers=headers, params=params, data=data) as response:
-            r = await response.text()
-            for line in r.split('\n'):
-                if line.startswith('1:'):
-                    clean_data = json.loads(line[2:])
-                    break
-            num_tickets_temp = len(clean_data[0]['event']['deals'])
-            if (num_tickets_temp != num_tickets):
-                print(f"{url}?ids={id_val}")
-            return {'id': id_val, 'num_tickets' : num_tickets_temp, 'status': response.status}
-    except:
-        pass
-    return {'id': id_val, 'num_tickets' : -1, 'status': -1}
+    data = '[{"slug":"' + slug +'","bundleFilter":{"utmSource":null,"visibilities":["public"]},"dealFilter":{"excludeShopifyMerch":false,"salesChannel":"online","currentlyVisible":true,"withResales":false,"ids":['+ str(id_val) + '],"utmSource":null,"visibilities":["public"]}},"$undefined"]'
+    async with session.post(url+f'ids={id_val}', headers=headers, params=params, data=data) as response:
+        r = await response.text()
+        for line in r.split('\n'):
+            if line.startswith('1:'):
+                clean_data = json.loads(line[2:])
+                break
+        num_tickets_temp = len(clean_data[0]['event']['deals'])
+        if (num_tickets_temp != num_tickets):
+            print(f"{url}?ids={id_val}")
+        return {'id': id_val, 'num_tickets' : num_tickets_temp, 'status': response.status}
+
 
 async def run(offer_ids: List[str]):
     async with ClientSession() as session:
