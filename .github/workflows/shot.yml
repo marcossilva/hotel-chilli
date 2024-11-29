@@ -15,6 +15,10 @@ on:
       num_tickets:
         description: "num_tickets:"
         required: true
+      next_action:
+        description: "next_action:"
+        required: false
+        default: "7f4d9e3dfd87839218e90688812e54b07b8e0bb814"
         
 
 jobs:
@@ -29,4 +33,4 @@ jobs:
           pip3 install -r requirements.txt
       - name: Run Python Script
         run: |
-          python3 get_url.py --url ${{ github.event.inputs.url }} --min_id ${{ github.event.inputs.min_id }} --max_id ${{ github.event.inputs.max_id }} --num_tickets ${{ github.event.inputs.num_tickets }}
+          python3 get_url.py --url ${{ github.event.inputs.url }} --min_id ${{ github.event.inputs.min_id }} --max_id ${{ github.event.inputs.max_id }} --num_tickets ${{ github.event.inputs.num_tickets }} --next_action ${{ github.event.inputs.next_action }}
