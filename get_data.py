@@ -1,8 +1,6 @@
 import requests
 import datetime
-from bs4 import BeautifulSoup
-
-import requests
+from zoneinfo import ZoneInfo
 
 cookies = {
     '_ga': 'GA1.1.1733788075.1738855457',
@@ -28,6 +26,6 @@ headers = {
 }
 
 response = requests.get('https://hotelchilli.com.br/api/get-guest-count', cookies=cookies, headers=headers)
-now = datetime.datetime.now()
+now = datetime.datetime.now(ZoneInfo("America/Sao_Paulo"))
 with open('data.json', 'a+') as f:
     f.write(now.strftime("%Y-%m-%d %H:%M:%S") + ',' + str(response.json()) + '\n')
