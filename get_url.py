@@ -4,6 +4,7 @@ import asyncio
 from typing import List
 import datetime
 import json
+import urllib.parse
 from aiohttp import ClientSession
 
 
@@ -22,16 +23,19 @@ min_id = int(args.min_id)
 max_id = int(args.max_id)
 num_tickets = int(args.num_tickets)
 next_action = args.next_action
-
+next_tree = """["",{"children":[["locale","pt-br","d"],{"children":["(main)",{"children":["events",{"children":[["slug","dando-ultima-do-ano","d"],{"children":["__PAGE__",{},"/pt-br/events/dando-ultima-do-ano","refresh"]}]}]}]}]},null,null,true]"""
+slug = url.split('/')[-1]
+next_router = urllib.parse.quote(next_tree).replace('%28', '(').replace('%29', ')').replace('dando-ultima-do-ano', slug)
 headers = {
     'accept': 'text/x-component',
     'accept-language': 'en-US,en;q=0.9,pt-BR;q=0.8,pt;q=0.7,es;q=0.6',
     'content-type': 'text/plain;charset=UTF-8',
     'dnt': '1',
-    'next-action': next_action,
+    'next-action': '7f85b34941c754ed8d9ade9e9eb5a671d0b6a883ca',
+    'next-router-state-tree': '%5B%22%22%2C%7B%22children%22%3A%5B%5B%22locale%22%2C%22pt-br%22%2C%22d%22%5D%2C%7B%22children%22%3A%5B%22(main)%22%2C%7B%22children%22%3A%5B%22events%22%2C%7B%22children%22%3A%5B%5B%22slug%22%2C%22dando-ultima-do-ano%22%2C%22d%22%5D%2C%7B%22children%22%3A%5B%22__PAGE__%22%2C%7B%7D%2C%22%2Fpt-br%2Fevents%2Fdando-ultima-do-ano%22%2C%22refresh%22%5D%7D%5D%7D%5D%7D%5D%7D%5D%7D%2Cnull%2Cnull%2Ctrue%5D',
     'origin': 'https://shotgun.live',
     'priority': 'u=1, i',
-    'referer': url,
+    'referer': 'https://shotgun.live/pt-br/events/dando-ultima-do-ano',
     'sec-ch-ua': '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
     'sec-ch-ua-mobile': '?0',
     'sec-ch-ua-platform': '"Linux"',
@@ -39,12 +43,13 @@ headers = {
     'sec-fetch-mode': 'cors',
     'sec-fetch-site': 'same-origin',
     'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+    'x-deployment-id': 'dpl_62vJxwoWrbDv5QszafYHwDcfuzPu',
 }
+
 async def my_post(session: ClientSession, id_val):
     params = {
         'ids': str(id_val),
     }
-    slug = url.split('/')[-1]
     data = '[{"slug":"' + slug +'","bundleFilter":{"utmSource":null,"visibilities":["public"]},"dealFilter":{"excludeShopifyMerch":false,"salesChannel":"online","currentlyVisible":true,"withResales":false,"ids":['+ str(id_val) + '],"utmSource":null,"visibilities":["public"]}},"$undefined"]'
     async with session.post(url+f'ids={id_val}', headers=headers, params=params, data=data) as response:
         r = await response.text()
