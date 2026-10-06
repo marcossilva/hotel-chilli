@@ -349,7 +349,8 @@ Implementado em `src/pipeline/backtest.py`:
 | 2016 | 21 d | 81,4 % | 30,7 % | 57,3 % | **29,2 %** | – | – | – |
 | 4032 | 28 d | 52,2 % | 19,4 % | 23,7 % | **15,3 %** | 65,5 % | 34,1 % | 3108,0 % |
 
-(`–` = não medido nesse tamanho; MAE/P90 em `backtest_results.json`.)
+(`–` = não medido nesse tamanho; MAE, P90 e `n_gaps` de cada célula em
+`docs/backtest_results.json`.)
 
 ### Conclusões
 
