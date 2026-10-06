@@ -190,18 +190,38 @@ informação.
 
 O que **não** fazemos: reescrever para "consertar" linhas antigas de erro — elas já não existem.
 
-### 3.2 Validador de escrita (defesa em profundidade)
+### 3.2 Validador de escrita (defesa em profundidade) — ✅ implementado
 
-No `get_data.py`, separar **obter → validar → persistir**:
+No `get_data.py`, o fluxo foi separado em **obter → validar → persistir**:
 
 ```python
-def fetch_count() -> int: ...          # só retorna int, ou lança
-def append_sample(path, value): ...    # só aceita int, formata e escreve
+def parse_count(payload) -> int | None: ...   # extrai o int; None se invalido
+def fetch_count(session, sleep) -> int: ...   # rede + retry; devolve int ou levanta
+def append_sample(path, value, now) -> str: ...  # so aceita int; valida antes de abrir
 ```
 
-Se a validação estiver embutida no loop de escrita (como hoje), um refator futuro pode reabrir a
-brecha. Separando, o caminho de escrita **não tem como** produzir linha malformada. Teste unitário
-garante: `append_sample(12)` → linha válida; `append_sample({...})` → `TypeError`, nada escrito.
+Se a validação estiver embutida no loop de escrita, um refator futuro pode reabrir a
+brecha. Separando, o caminho de escrita **não tem como** produzir linha malformada: a checagem
+de tipo roda **antes** de `open()`, então valor inválido => exceção e arquivo intacto (nem
+criado). Testes unitários garantem:
+
+- `append_sample(12)` → linha que casa o `LINE_RE` do pipeline
+- `append_sample({...})` → `TypeError`, **arquivo não criado**
+- `append_sample("61")`, `61.0`, `None`, `[61]` → `TypeError`
+- `append_sample(True)` → `TypeError` (`bool` é subclasse de `int` e formataria `True`)
+- `append_sample(-1)` → `ValueError` (não casaria o `\d+` do parse)
+- `fetch_count` com API fora → `RuntimeError` após `MAX_RETRIES`, e `main()` → **exit 1**
+
+Colateral bem-vindo: **importar `get_data` não faz nenhuma requisição** — todo o código de
+módulo saiu para `main()`, protegido por `if __name__ == "__main__"`. Antes, qualquer
+`import get_data` disparava a rede.
+
+> 📌 **`0` continua sendo rejeitado**, agora de forma explícita (`MIN_VALID_COUNT = 1`) em vez
+> de um `if candidate:` acidental. Foi decisão antiga (commit `53c5bbf93`, *"Fix zero/concat
+> bugs"*): o endpoint devolvia `0` na falha, então `0` virou sentinela de erro. Existem 46
+> zeros no bruto (2025-03 → 2026-01) daquela época. **Se o endpoint novo garantir que `0`
+> significa "hotel vazio", trocar `MIN_VALID_COUNT` para `0` resolve** — `append_sample(0)` já
+> aceita, só o filtro de rede é que bloqueia.
 
 ---
 
@@ -494,7 +514,7 @@ Implementado: `data/processed/occupancy_clean.{parquet,csv}` + `build_report.jso
 
 | # | Tarefa | Status |
 |---|---|---|
-| 1 | Separar `fetch_count()` / `append_sample()` no `get_data.py` + teste | ⬜ pendente (§3.2) |
+| 1 | Separar `fetch_count()` / `append_sample()` no `get_data.py` + teste | ✅ feito (§3.2, 25 testes) |
 | 2 | `src/pipeline/build_clean.py`: estágios A–D | ✅ feito |
 | 3 | `src/pipeline/backtest.py`: mascarar e medir | ✅ feito (§5) |
 | 4 | Limpeza pontual das 73 linhas (D4) | ✅ feito e executado |
@@ -517,7 +537,8 @@ Implementado: `data/processed/occupancy_clean.{parquet,csv}` + `build_report.jso
 Removidos `prophet`, `selenium`, `playwright`, `scikit-learn`, `xgboost`, `lightgbm`,
 `matplotlib`, `seaborn`, `plotly`, `loguru`, `tqdm`, `holidays`, `beautifulsoup4` — nenhum é
 importado por arquivo rastreado. Instalação limpa caiu de minutos para **10 s**, o que também
-acelera o cron. Validado em venv novo: `get_data.py` exit 0, 12 testes passam, build completa.
+acelera o cron. Validado em venv novo: `get_data.py` exit 0, testes passam, build completa.
+Hoje: **37 testes** (`test_pipeline.py` 12 + `test_get_data.py` 25).
 (`darts` continua opcional e fora do requirements — é só ferramenta de avaliação, importada sob
 `try/except`.)
 
