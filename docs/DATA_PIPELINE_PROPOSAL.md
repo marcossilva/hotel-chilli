@@ -60,13 +60,16 @@ mas não há nada que garanta isso mecanicamente — a validação vive no mesmo
 
 A cron externa dispara a cada 15 min. Mapeei os dados contra essa grade:
 
+> 📌 Números apurados em **2026-10-06**. Como a grade vai até a última observação, os totais
+> crescem a cada amostra que o cron appenda — trate-os como instantâneo, não como constante.
+
 | Métrica | Valor |
 |---|---|
-| Slots de 15 min esperados (2024-01-02 → hoje) | **96.670** |
-| Slots com observação | **79.116** (81,8 %) |
-| Slots faltando | **17.554** (18,2 %) |
-| Observações dentro do marco (≤ 60 s) | 78.840 (99,63 %) |
-| Observações fora do marco (minutos diferentes) | 294 (0,37 %) |
+| Slots de 15 min esperados (2024-01-02 → hoje) | **96.754** |
+| Slots com observação | **79.117** (81,8 %) |
+| Slots faltando | **17.637** (18,2 %) |
+| Observações dentro do marco (≤ 60 s do floor) | 78.840 (99,63 %) |
+| Observações fora do marco (floor > 60 s) | 295 (0,37 %) |
 
 **Distribuição dos faltantes por tamanho de buraco:**
 
@@ -74,30 +77,36 @@ A cron externa dispara a cada 15 min. Mapeei os dados contra essa grade:
 |---|---:|---:|
 | ≤ 1 h | 218 | 1,2 % |
 | 1–6 h | 138 | 0,8 % |
-| 6–24 h | 234 | 1,3 % |
+| 6–24 h | 317 | 1,8 % |
 | 1–7 dias | 97 | 0,6 % |
-| **> 7 dias (2 blocos)** | **16.867** | **96,1 %** |
+| **> 7 dias (2 blocos)** | **16.867** | **95,6 %** |
 
 Os **dois grandes buracos** que você mencionou:
 
 1. `2026-02-08 18:00` → `2026-06-05 22:22` — **117 dias**, ~11.248 slots
 2. `2026-08-08 02:15` → `2026-10-05 15:21` — **58 dias**, ~5.619 slots (o outage do endpoint 404)
 
-Os 687 slots "normais" somam **0,7 % da série**. Os dois blocos gigantes somam **17,4 % da série
-inteira**. Essa assimetria é central para a decisão de modelagem (ver §4.4).
+Os **770 slots "normais"** (fora dos 2 blocos) somam **0,8 % da série**. Os dois blocos gigantes
+somam **17,4 % da série inteira**. Essa assimetria é central para a decisão de modelagem (ver §4.4).
 
 ### 1.4 Fora de grid
 
-Das 294 observações fora do marco de 15 min, **282 caem em slots que não têm nenhuma outra
+Das **295** observações fora do marco de 15 min, **279 caem em slots que não têm nenhuma outra
 observação** — ou seja, são a única medida daquele slot. Descartá-las criaria buracos novos
 desnecessariamente.
+
+> Detalhe de implementação: a atribuição usa **`floor`** (`slot = ts.floor('15min')`), não o vizinho
+> mais próximo. Como a cron dispara em `:00/:15/:30/:45` e a latência é de segundos, quase toda
+> observação cai logo **depois** da marca — então `floor` coincide com o vizinho mais próximo na
+> prática. `off_grid` marca o que ficou **> 60 s após o floor**.
 
 Concentram-se no início do projeto (jan–mar 2024, quando era executado manualmente, antes da cron).
 
 ### 1.5 Duplicatas
 
-4 slots têm 2 observações (ex.: `2026-02-08 00:30` com `166` e `168` no mesmo slot). Diferença
-mínima, mas precisa de regra de consolidação.
+**16 slots** têm mais de uma observação (14 com 2, 2 com 3) — 18 observações a mais que precisam
+de regra de consolidação (mediana). Ex.: `2026-02-08 00:30` com `166` e `168` no mesmo slot.
+Diferença mínima, mas precisa de regra.
 
 ### 1.6 Bug lateral encontrado nos notebooks
 
@@ -217,8 +226,8 @@ Nada é descartado em silêncio — tudo vai para `rejected_lines[]` no relatór
 
 1. **Alinhar ao slot**: `slot = floor(timestamp, 15min)` em `America/Sao_Paulo`
 2. **Observação no marco** (≤ 60 s do início do slot) → `source = "original"`
-3. **Observação fora do marco** → atribui ao slot mais próximo, mantém o valor (é dado real),
-   marca `off_grid = true`. *Racional: 282 dos 294 são a única medida do slot — descartar seria
+3. **Observação fora do marco** → mantém no slot do próprio `floor`, mantém o valor (é dado real),
+   marca `off_grid = true`. *Racional: 279 dos 295 são a única medida do slot — descartar seria
    trocar dado por ficção.* Alternativa conservadora em §6.
 4. **Duplicatas no mesmo slot** → fica a **mediana** (com `n_obs` registrado). Mediana porque
    protege contra um dos dois ser artefato.
@@ -298,7 +307,7 @@ interpolar o resíduo entre extremos distantes piora (MAPE 19,4 % vs 15,3 % do s
 inteira dentro de um gap e vira `NaN`, faz fallback para a mediana global — senão um gap de
 7 dias propagaria `NaN` para o meio dele (bug encontrado e corrigido durante o backtest).
 
-#### O que ficou de fora: os 2 blocos > 7 dias ainda são decisão em aberto (§6/D1)
+#### Os 2 blocos > 7 dias — decidido: preencher (§6/D1, opção A)
 
 ### 4.5 Por que Prophet não é a escolha aqui
 
@@ -394,17 +403,21 @@ Reproduzir: `python -m src.pipeline.backtest --output backtest_results.json`
 
 ---
 
-## 6. Decisões em aberto
+## 6. Decisões
 
-### D1 — o que fazer com os 2 blocos > 7 dias? **(a mais importante)**
+Todas resolvidas. D2–D5 foram decididas durante a implementação; **D1 foi a última, decidida
+pelo usuário em 2026-10-06 → opção A (preencher)**.
+
+### D1 — o que fazer com os 2 blocos > 7 dias? **decidido: D1b / opção A**
 
 Os 2 blocos (2026-02-08 → 2026-06-05, ~117 d; 2026-08-08 → 2026-10-05, ~58 d) somam
-**16.867 slots = 96 % dos faltantes, 17,4 % da série**.
+**16.867 slots = 95,6 % dos faltantes, 17,4 % da série**.
 
 Novo elemento desde a primeira versão desta proposta: **o backtest agora mede o erro nessa
 escala** (§5). Preencher com o tier 4 (`seasonal`) tem MAPE **15,3 % em 28 dias** e **29,2 % em
 21 dias** — melhor que linear (52–81 %), que Prophet (65 %) e que `weekly_naive` (24–57 %).
-Ou seja: a opção "preencher" deixou de ser chute, tem número medido.
+Ou seja: a opção "preencher" deixou de ser chute — *entre as alternativas testadas*, há número
+medido que a favorece (a ressalva de fundo logo abaixo).
 
 | Opção | O que faz | Contra | Erro medido |
 |---|---|---|---|
@@ -413,26 +426,42 @@ Ou seja: a opção "preencher" deixou de ser chute, tem número medido.
 | **D1c. Linear** | Reta de 117 dias entre os extremos | Inaceitável — a série oscila, a reta não | MAPE 52–110 % ❌ |
 | **D1d. Prophet/STL** | Modelo pleno, `synthetic` | Não determinístico; pior erro que o sazonal simples | MAPE 58–65 % ❌ |
 
-**O que está implementado hoje: D1b** — o `build_clean.py` preenche tudo, com
+**Decisão (2026-10-06): manter D1b — preencher.** O `build_clean.py` preenche tudo, com
 `confidence = 0,30` (por estar fora da faixa validada no backtest) e `gap_size` real em cada
 slot, para quem quiser filtrar.
 
-**D1a continua sendo a alternativa defensável** se a prioridade for não misturar dado inventado
-numa análise que não filtre por `source`. É uma linha de código (trocar o tier 4 por
-`source = "missing"`, valor `NaN`), e o `build_report.json` já lista os 16.867 slots.
+O critério não foi só o erro medido: para esses 2 blocos **não existe ground truth** (nunca
+houve observação ali), então nenhum número de MAPE descreve o erro *naqueles* slots — o backtest
+mede em blocos que temos, mascarados. O MAPE 15–29 % diz que `seasonal` é a melhor escolha
+*entre as testadas*, não que o preenchimento está certo.
+
+A opção **D1a (`gap-marked`) foi mantida como alternativa de uma linha de código** — trocar o
+tier 4 por `source = "missing"`, valor `NaN`. E o `build_report.json` já lista os 16.867 slots,
+além de `source`, `gap_size` e `confidence` permitirem filtrar:
+
+```python
+df[df.source == 'original']      # 79.101  — só dado real observado
+df[df.gap_size <= 4032]          # 79.887  — remove os 2 blocos gigantes (16.867 slots)
+df[df.confidence >= 0.5]         # 79.887  — idem, filtro equivalente (verificado)
+```
+
+As duas últimas deixam passar os 786 sintéticos de preenchimento pequeno (buracos ≤ 1 h) — que
+são interpolação local, não extrapolação de meses.
 
 O que **nunca**: D1c e D1d — ambos medidos pior que D1b.
 
 > ⚠️ Nota honesta: 17,4 % da série sendo sintética distorce qualquer análise que não filtre por
-> `source`. `df[df.source == 'original']` devolve os 79.116 pontos reais — use-o como padrão.
+> `source`. `df[df.source == 'original']` devolve os 79.101 pontos reais — use-o como padrão.
 
 ### D2 — observações fora do marco — **decidido: D2a**
 
-- **D2a.** Atribui ao slot mais próximo, marca `off_grid = true` ⭐ *(282 são a única medida do slot)*
+- **D2a.** Mantém no slot do `floor`, marca `off_grid = true` ⭐ *(279 dos 295 são a única medida do slot)*
 - ~~**D2b.**~~ Descarta e interpola (troca dado real por sintético)
 
-Implementado. 290 slots com `off_grid = true` (294 observações fora do marco; tolerância de 60 s
-calibrada — 0 observações caem exatas no grid, só 294 passam de 60 s).
+Implementado. 291 slots com `off_grid = true` (295 observações fora do marco; tolerância de 60 s
+calibrada — `off_grid` é o que ficou **> 60 s depois do floor**, 295 observações).
+Nota: a atribuição é por **`floor`**, não por vizinho mais próximo — ver §1.4. Na prática dá no
+mesmo porque a cron dispara na marca e só há latência para depois dela.
 
 ### D3 — onde o build roda — **decidido: D3b**
 
@@ -495,8 +524,11 @@ acelera o cron. Validado em venv novo: `get_data.py` exit 0, 12 testes passam, b
 **Critério de aceite global — verificado:**
 
 - ✅ Rodar o build duas vezes → arquivos **byte-a-byte idênticos** (`md5` igual).
-- ✅ `df[df.source == 'original'].value` tem exatamente os **79.116** valores do bruto
-  (índice e valores idênticos, `np.allclose` = True).
+- ✅ `df[df.source == 'original']` reproduz exatamente o bruto: **79.117 slots observados no
+  `data.json`, menos os 16 `suspect_values` = 79.101 `original`**. Verificado por
+  `floor(bruto)` → mediana por slot → comparação item a item com o CSV: **79.101 / 79.101
+  valores idênticos, 0 divergências**. (Os 16 que faltam são justamente os suspeitos, que viram
+  `NaN` e depois `synthetic` — listados em `build_report.json`.)
 - ✅ Zero `NaN` em `value`; `ts` monotônico, sem duplicatas.
 - ✅ 0 linhas rejeitadas no parse (bruto já limpo).
 
@@ -507,8 +539,8 @@ acelera o cron. Validado em venv novo: `get_data.py` exit 0, 12 testes passam, b
 1. **As 73 linhas vazias foram removidas** por `src/pipeline/clean_raw.py` (idempotente — a
    segunda execução reporta `nada a remover`). A causa raiz do lixo de erro
    (`str(response.json())`) já tinha sido corrigida em junho/2026.
-2. **18,2 % dos slots de 15 min não têm dado**, mas **96 % disso está em 2 blocos** (117 e 58 dias).
-   Os faltantes "normais" são só 0,7 % da série.
+2. **18,2 % dos slots de 15 min não têm dado**, mas **95,6 % disso está em 2 blocos** (117 e 58 dias).
+   Os faltantes "normais" são só 0,8 % da série.
 3. **A sazonalidade é dupla e estável** (corr 0,998 entre 2024→2025) — e o backtest confirmou que
    modelos simples batem Prophet e Darts: `linear` em gaps ≤ 1 h, `seasonal_residual` até 48 h,
    `weekly_naive` até 14 dias, `seasonal` acima disso.
@@ -518,6 +550,6 @@ acelera o cron. Validado em venv novo: `get_data.py` exit 0, 12 testes passam, b
 5. **16 valores de ruído isolado** (zeros entre vizinhos de 25–246) viraram `NaN` e são listados
    em `build_report.json`. O detector é conservador de propósito: **não** toca em eventos reais
    (a noite de carnaval com 78 slots acima de 10×MAD é dado, não artefato).
-6. **A única decisão que resta é D1** — o que fazer com os 17,4 % da série nos 2 blocos gigantes.
-   Hoje está implementado "preencher" (tier 4, `confidence = 0,30`), com o erro medido (MAPE 15–29 %);
-   a alternativa `gap-marked` é uma linha de código. Ver §6.
+6. **D1 — a última decisão — foi fechada: preencher (opção A).** Os 17,4 % da série nos 2 blocos
+   gigantes ficam com tier 4, `confidence = 0,30`, e são 100 % filtráveis por `source`,
+   `gap_size` ou `confidence`. A alternativa `gap-marked` continua a uma linha de código. Ver §6.
