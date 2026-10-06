@@ -1,8 +1,8 @@
 {
   "run_date": "2026-10-06",
-  "series": "data.json (79116 slots observados de 96670)",
+  "series": "data.json (79117 slots observados de 96754; -16 suspect_values = 79101 'original')",
   "seed": 42,
-  "protocol": "blocos reais de dados mascarados; nenhum modelo ve os valores do gap no treino. Modelos de interpolacao (linear, seasonal_residual, weekly_naive) usam os dois lados do gap; prophet treina numa janela de +/-45 dias fora do gap; darts treina so no passado (14 dias antes) e preve o gap inteiro. Cada resultado traz n_gaps proprio.",
+  "protocol": "blocos reais de dados mascarados; nenhum modelo ve os valores do gap no treino. Modelos de interpolacao (linear, seasonal_residual, weekly_naive) usam os dois lados do gap; prophet treina numa janela de +/-45 dias fora do gap; darts treina so no passado (14 dias antes) e preve o gap inteiro. Cada resultado traz n_gaps proprio. NOTA: o codigo do prophet foi removido de backtest.py depois desta execucao (perdeu em todos os tamanhos) -- os numeros abaixo sao historicos e ficam como registro. Ver docs/DATA_PIPELINE_PROPOSAL.md 4.5.",
   "runs": [
     {
       "gap_sizes": [
