@@ -34,17 +34,24 @@ data = None
 for attempt in range(1, MAX_RETRIES + 1):
     try:
         response = requests.get(
-            'https://hotelchilli.com.br/api/get-guest-count',
+            'https://hotelchilli.com.br/wp-admin/admin-ajax.php',
+            params={'action': 'atualizar_contador_chilli'},
             cookies=cookies,
             headers=headers,
             timeout=TIMEOUT,
         )
         response.raise_for_status()
-        candidate = response.json()
-        if isinstance(candidate, (int, float)) and candidate != 0:
+        payload = response.json()
+        # {"success": true, "data": {"contagem": "61", "hora": "15:10"}}
+        raw = payload.get('data', {}).get('contagem') if payload.get('success') else None
+        try:
+            candidate = int(raw)
+        except (TypeError, ValueError):
+            candidate = None
+        if candidate:
             data = candidate
             break
-        print(f"Attempt {attempt}/{MAX_RETRIES}: invalid response ({candidate!r}), retrying...")
+        print(f"Attempt {attempt}/{MAX_RETRIES}: invalid response ({payload!r}), retrying...")
     except Exception as e:
         print(f"Attempt {attempt}/{MAX_RETRIES}: error ({e}), retrying...")
     if attempt < MAX_RETRIES:
