@@ -1,7 +1,6 @@
 name: Get Data from Website on a CRON Schedule
 
 on:
-  push:
   workflow_dispatch:
 
 jobs:
@@ -24,5 +23,9 @@ jobs:
           git config --global user.email 'github-actions@github.com'
           git config --global user.name 'github-actions'
           git add .
-          git commit -m "Update data"
-          git push
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Update data"
+            git push
+          fi
