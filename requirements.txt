@@ -1,3 +1,11 @@
-beautifulsoup4==4.12.2
-aiohttp==3.9.3
-argparse==1.4.0
+# Coleta (usada pelas actions: github-actions.yml e shot.yml)
+requests>=2.31.0
+aiohttp>=3.9.3
+
+# Pipeline de dados limpos (src/pipeline): preenchimento sintetico
+pandas>=2.0.0
+numpy>=1.24.0
+pyarrow>=12.0.0
+
+# Testes
+pytest>=7.4.0

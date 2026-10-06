@@ -5,10 +5,14 @@ diferentes modelos de preenchimento.
 
 Honestidade do backtest:
   - Nenhum modelo ve os valores do gap durante o treino.
-  - Modelos de interpolacao (linear, sazonal, prophet) treinam com os dados
-    FORA do gap (os dois lados) e predicem apenas a janela do gap.
+  - Modelos de interpolacao (linear, sazonal, weekly_naive) treinam com os
+    dados FORA do gap (os dois lados) e predicem apenas a janela do gap.
   - Modelos de previsao (darts) treinam apenas com os dados ANTES do gap
     (janela de train_days) e preveem a janela inteira -- sem ver o futuro.
+
+Prophet foi testado e medido nesta versao, depois removido: perdeu para os
+modelos simples em todos os tamanhos de gap (MAPE 28-73%) sendo ~40x mais
+lento. Numeros preservados em docs/backtest_results.json e docs §5.
 
 Uso:
     python -m src.pipeline.backtest [--output backtest_results.json]
@@ -123,44 +127,6 @@ FAST_MODELS: dict[str, ModelFn] = {
 
 
 # ---------------------------------------------------------------------------
-# Prophet: interpolacao por gap, treino so com dados fora do gap
-# ---------------------------------------------------------------------------
-
-def prophet_predict(
-    series: pd.Series, start, end,
-    window_days: int = 45,
-) -> pd.Series | None:
-    try:
-        from prophet import Prophet
-    except ImportError:
-        return None
-
-    lo = start - pd.Timedelta(days=window_days)
-    hi = end + pd.Timedelta(days=window_days)
-    train = series.loc[lo:hi].dropna().reset_index()
-    if len(train) < 500:
-        return None
-    train.columns = ["ds", "y"]
-    train["ds"] = train["ds"].dt.tz_localize(None)
-
-    m = Prophet(
-        daily_seasonality=True,
-        weekly_seasonality=True,
-        yearly_seasonality=False,
-        changepoint_prior_scale=0.05,
-    )
-    m.fit(train)
-
-    gap_idx = series.loc[start:end].index
-    future = pd.DataFrame({"ds": gap_idx.tz_localize(None)})
-    yhat = m.predict(future)["yhat"].values
-
-    out = pd.Series(np.nan, index=series.index)
-    out.loc[gap_idx] = yhat
-    return out
-
-
-# ---------------------------------------------------------------------------
 # Darts: previsao pura (so dados passados)
 # ---------------------------------------------------------------------------
 
@@ -215,7 +181,6 @@ def darts_predict_factory(kind: str, train_days: int = 14) -> ModelFn:
 
 
 SLOW_MODELS: dict[str, ModelFn] = {
-    "prophet": lambda s, a, b: prophet_predict(s, a, b),
     "darts_seasonal": darts_predict_factory("seasonal"),
     "darts_exp_smoothing": darts_predict_factory("exp_smoothing"),
 }
@@ -344,7 +309,7 @@ def main() -> int:
                     default=[1, 4, 96, 672, 4032])
     ap.add_argument("--n-gaps", type=int, default=20)
     ap.add_argument("--n-gaps-slow", type=int, default=5)
-    ap.add_argument("--no-slow", action="store_true", help="pula prophet e darts")
+    ap.add_argument("--no-slow", action="store_true", help="pula os modelos darts")
     args = ap.parse_args()
 
     print("Carregando serie...")

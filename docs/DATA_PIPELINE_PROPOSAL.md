@@ -150,7 +150,7 @@ O **padrão de forma** é muito estável; o **nível** caiu ~15 % desde 2024. Is
   350–420. Remover tudo apagaria dado verdadeiro. Por isso o detector de ruído (§4.2.6) é
   conservador: só marca artefato **isolado** (16 casos), não eventos.
 - Sem DST: `America/Sao_Paulo` tem offset fixo `-03:00` desde 2019 → timestamps consistentes
-- `prophet>=1.1.5` já está no `requirements.txt` (testado no backtest, §5 — perdeu)
+- `prophet` foi testado no backtest (§5) e **removido** — perdeu para os modelos simples
 
 ---
 
@@ -302,7 +302,7 @@ inteira dentro de um gap e vira `NaN`, faz fallback para a mediana global — se
 
 ### 4.5 Por que Prophet não é a escolha aqui
 
-`prophet` está no requirements, então testei. O backtest (§5) confirmou:
+Testei (o `prophet>=1.1.5` estava no requirements antigo). O backtest (§5) confirmou:
 
 1. **Perde para os modelos simples em todos os tamanhos** de gap medido: MAPE 28 % (1 slot),
    39 % (4), 72 % (96), 58 % (672), 65 % (4032) — contra 2,4 % do `linear` no gap de 1 slot.
@@ -312,15 +312,23 @@ inteira dentro de um gap e vira `NaN`, faz fallback para a mediana global — se
 4. Para os 2 blocos gigantes, Prophet *extrapolaria* a sazonalidade plausivelmente, mas seria
    **invenção com cara de previsão** — e ainda assim com erro medido pior que o sazonal simples.
 
-Conclusão: **modelo sazonal simples (§4.4) no pipeline**, Prophet reservado para análise
-exploratória fora do caminho crítico.
+Conclusão: **modelo sazonal simples (§4.4) no pipeline.**
 
-Testado também (Darts 0.47.0):
+**`prophet` foi removido do `requirements.txt` e do `backtest.py`** — sem uso no pipeline e sem
+ganho medido. Os números acima ficam registrados em `docs/backtest_results.json` (medidos em
+2026-10-06, antes da remoção). Se um dia quiser reavaliar: `pip install prophet` e recolocar a
+função `prophet_predict` (commit `19186babe` tem a versão completa).
+
+Testado também (Darts 0.47.0, ainda no backtest como referência externa — não está no
+`requirements.txt` pois é só ferramenta de avaliação, não do pipeline):
 
 - `NaiveSeasonal(K=96)` — 46 % no gap de 1 slot, perde para o `weekly_naive` (20 %), que faz a
   mesma ideia com janela de 1 semana em vez de 1 dia.
 - `ExponentialSmoothing(seasonal_periods=96)` — instável: 6 % em gap curto, mas 230 % em 24 h,
   883 % em 7 dias, 3108 % em 28 dias. **Rejeitado.**
+
+> Ambos são importados sob `try/except ImportError` — sem `darts` instalado o backtest roda
+> normalmente e apenas reporta "sem predicoes validas" para esses dois.
 
 ---
 
@@ -350,7 +358,8 @@ Implementado em `src/pipeline/backtest.py`:
 | 4032 | 28 d | 52,2 % | 19,4 % | 23,7 % | **15,3 %** | 65,5 % | 34,1 % | 3108,0 % |
 
 (`–` = não medido nesse tamanho; MAE, P90 e `n_gaps` de cada célula em
-`docs/backtest_results.json`.)
+`docs/backtest_results.json`. A coluna `prophet` é **histórica**: medido antes da remoção do
+código — ver §4.5.)
 
 ### Conclusões
 
@@ -465,6 +474,23 @@ Implementado: `data/processed/occupancy_clean.{parquet,csv}` + `build_report.jso
 | 7 | Testes: parse, grade, proveniência, determinismo | ✅ `tests/test_pipeline.py` (12 testes) |
 | 8 | `src/pipeline/clean_raw.py`: limpeza idempotente do bruto | ✅ feito e executado |
 | 9 | Ruído isolado → `NaN` + `suspect_values[]` (§4.2.6) | ✅ feito (16 valores) |
+| 10 | Remover Prophet (código) e enxugar `requirements.txt` | ✅ feito |
+
+**`requirements.txt` enxuto** — só o que o código rastreado usa:
+
+| pacote | quem usa |
+|---|---|
+| `requests` | `get_data.py` (cron a cada 15 min) |
+| `aiohttp` | `get_url.py` (`shot.yml`) |
+| `pandas`, `numpy`, `pyarrow` | `src/pipeline/` (parse, tiers, escrita parquet) |
+| `pytest` | `tests/` |
+
+Removidos `prophet`, `selenium`, `playwright`, `scikit-learn`, `xgboost`, `lightgbm`,
+`matplotlib`, `seaborn`, `plotly`, `loguru`, `tqdm`, `holidays`, `beautifulsoup4` — nenhum é
+importado por arquivo rastreado. Instalação limpa caiu de minutos para **10 s**, o que também
+acelera o cron. Validado em venv novo: `get_data.py` exit 0, 12 testes passam, build completa.
+(`darts` continua opcional e fora do requirements — é só ferramenta de avaliação, importada sob
+`try/except`.)
 
 **Critério de aceite global — verificado:**
 
